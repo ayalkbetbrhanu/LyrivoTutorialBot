@@ -12,19 +12,32 @@ TELEBIRR_NUMBER = "0999942281"
 # Products Definition
 PRODUCTS = {
     "prod_1": {
-        "name": "🎬 3D Card Lyrics Edit Tutorial",
+        "name": "🎬 3D Card Lyrics Edit Tutorial Video",
         "price": "200 ብር",
-        "caption": "የ 3D Card Lyrics Video አሰራር ሙሉ ቱቶሪያል ቪዲዮ።"
+        "caption": "የ 3D Card Lyrics Video አሰራር ሙሉ ቱቶሪያል ቪዲዮ።",
+        "delivery_type": "video",
+        "content": "AAMCBAADGQEDmFZxarijYpL7lST8B0TLWpn8BOk7Q3gAAmYhAAKtFchRvnLTuz25K5wBAAdtAAM9BA"
     },
     "prod_2": {
-        "name": "🎬 Text Animation Lyrics Edit Tutorial",
+        "name": "🎬 Text Animation Lyrics Edit Tutorial Video",
         "price": "200 ብር",
-        "caption": "የ Text Animation Lyrics Video አሰራር ሙሉ ቱቶሪያል ቪዲዮ።"
+        "caption": "የ Text Animation Lyrics Video አሰራር ሙሉ ቱቶሪያል ቪዲዮ።",
+        "delivery_type": "video",
+        "content": "AAMCBAADGQEDmFb3arilFmh9-l-0pCgnuwUGpZGzmFEAAmEhAAKtFchRth-ezFqfd9EBAAdtAAM9BA"
     },
-    "prod_xml": {
-        "name": "📄 Alight Motion XML Preset File",
+    "prod_xml_text": {
+        "name": "📄 Text Animation Lyrics Edit XML File",
         "price": "150 ብር",
-        "caption": "ለ Alight Motion የሚሆን ዝግጁ XML Preset ፋይል።"
+        "caption": "ለ Text Animation Lyrics Edit የሚሆን XML Preset ፋይል።",
+        "delivery_type": "document",
+        "content": "BQACAgQAAxKBAAEi7kpquKh01QHyGXgbT7Mo4FtDWt5wiQACZYEAAq0VyFEls1lywTAapDOE"
+    },
+    "prod_xml_3d": {
+        "name": "📄 3D Card Lyrics Edit XML File",
+        "price": "150 ብር",
+        "caption": "ለ 3D Card Lyrics Edit የሚሆን XML Preset ፋይል።",
+        "delivery_type": "document",
+        "content": "BQACAgQAAxKBAAEi7kpquKh01QHyGXgbT7Mo4FtDWt5wiQACZyEAAq0VyFEls1lywTAapDOE"
     }
 }
 
@@ -49,11 +62,30 @@ async def start_cmd(message: Message):
     )
     await message.answer(welcome_text, reply_markup=get_main_keyboard())
 
+@dp.callback_query(F.data == "back_to_menu")
+async def back_to_menu_handler(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id in user_orders:
+        del user_orders[user_id]
+        
+    welcome_text = (
+        f"ሰላም {callback.from_user.first_name}! 👋\n\n"
+        "እባክዎን መግዛት የሚፈልጉትን ምርት ይምረጡ፦"
+    )
+    await callback.message.edit_text(welcome_text, reply_markup=get_main_keyboard())
+    await callback.answer()
+
 @dp.callback_query(F.data.in_(PRODUCTS.keys()))
 async def process_product_selection(callback: CallbackQuery):
     prod_key = callback.data
     user_orders[callback.from_user.id] = prod_key
     product = PRODUCTS[prod_key]
+    
+    pay_keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="⬅️ ተመለስ (Back)", callback_data="back_to_menu")]
+        ]
+    )
     
     text = (
         f"የመረጡት ምርት፦ *{product['name']}*\n"
@@ -63,7 +95,7 @@ async def process_product_selection(callback: CallbackQuery):
         "ክፍያውን ፈፅመው ሲጨርሱ የከፈሉበትን **Screenshot (ደረሰኝ)** እዚሁ ቦት ላይ ይላኩ።"
     )
     
-    await callback.message.edit_text(text, parse_mode="Markdown")
+    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=pay_keyboard)
     await callback.answer()
 
 @dp.message(F.photo)
@@ -105,22 +137,37 @@ async def approve_payment(callback: CallbackQuery):
     target_user_id = int(user_id_str)
     product = PRODUCTS[prod_key]
 
+    # አድሚኑ ጋር ያለውን መልእክት ማስተካከል
     await callback.message.edit_caption(
         caption=callback.message.caption + "\n\n✅ **ሁኔታ፦ ጸድቋል (Approved)**"
     )
 
+    # ለተጠቃሚው ማሳወቂያ መላክ
     await bot.send_message(
         chat_id=target_user_id,
-        text=f"🎉 ክፍያዎ ተረጋግጧል!\nለማውረድ የተዘጋጀው፦ *{product['name']}*",
+        text=f"🎉 **ክፍያዎ ተረጋግጧል!**\n\nየመረጡት፦ *{product['name']}* ከታች ይላክሎታል።\n\nሌላ ተጨማሪ ትምህርት ወይም XML መግዛት ከፈለጉ ድጋሚ /start በማለት መግዛት ይችላሉ!",
         parse_mode="Markdown"
     )
-    
-    await bot.send_message(
-        chat_id=target_user_id,
-        text="🔗 ምርትዎን ለማግኘት በቴሌግራም አድሚኑን ያናግሩ ወይም Link/File በቅርቡ ይላክልዎታል።"
-    )
-    
-    await callback.answer("ክፍያው ጸድቋል፤ ለተጠቃሚው ተልኳል።")
+
+    # አውቶማቲክ ቪዲዮ ወይም ፋይል መላክ
+    if product["delivery_type"] == "video":
+        await bot.send_video(
+            chat_id=target_user_id,
+            video=product["content"],
+            caption=f"🎬 {product['name']}\n\nስለገዙ እናመሰግናለን!"
+        )
+    elif product["delivery_type"] == "document":
+        await bot.send_document(
+            chat_id=target_user_id,
+            document=product["content"],
+            caption=f"📄 {product['name']}\n\nስለገዙ እናመሰግናለን!"
+        )
+
+    # የተጠቃሚውን የትዕዛዝ ታሪክ ማጽዳት (ድጋሚ ሌላ ምርት መግዛት እንዲችል)
+    if target_user_id in user_orders:
+        del user_orders[target_user_id]
+
+    await callback.answer("ክፍያው ጸድቋል፤ ቪዲዮው/ፋይሉ ለተጠቃሚው ተልኳል!")
 
 @dp.callback_query(F.data.startswith("rej_"))
 async def reject_payment(callback: CallbackQuery):
@@ -135,6 +182,10 @@ async def reject_payment(callback: CallbackQuery):
         chat_id=target_user_id,
         text="❌ ይቅርታ! የላኩት የክፍያ ደረሰኝ አልተረጋገጠም። እባክዎን ትክክለኛ ደረሰኝ መላክዎን ያረጋግጡ ወይም አድሚኑን ያናግሩ።"
     )
+
+    # ውድቅ ከተደረገ በኋላም ቢሆን ድጋሚ መሞከር እንዲችል ማጽዳት
+    if target_user_id in user_orders:
+        del user_orders[target_user_id]
 
     await callback.answer("ክፍያው ውድቅ ተደርጓል።")
 
