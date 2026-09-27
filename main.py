@@ -30,14 +30,14 @@ PRODUCTS = {
         "price": "150 ብር",
         "caption": "ለ Text Animation Lyrics Edit የሚሆን XML Preset ፋይል።",
         "delivery_type": "document",
-        "content": "BQACAgQAAxKBAAEi7kpquKh01QHyGXgbT7Mo4FtDWt5wiQACZYEAAq0VyFEls1lywTAapDOE"
+        "content": "BQACAgQAAxkBAAEi7kpquKh01QHyGXgbT7Mo4FtDWt5wiQACZYEAAq0VyFEls1lywTAapDOE"
     },
     "p4": {
         "name": "📄 3D Card Lyrics Edit XML File",
         "price": "150 ብር",
         "caption": "ለ 3D Card Lyrics Edit የሚሆን XML Preset ፋይል።",
         "delivery_type": "document",
-        "content": "BQACAgQAAxKBAAEi7kpquKh01QHyGXgbT7Mo4FtDWt5wiQACZyEAAq0VyFEls1lywTAapDOE"
+        "content": "BQACAgQAAxkBAAEi7kpquKh01QHyGXgbT7Mo4FtDWt5wiQACZyEAAq0VyFEls1lywTAapDOE"
     }
 }
 
@@ -110,7 +110,6 @@ async def handle_screenshot(message: Message):
     product = PRODUCTS[prod_key]
     photo_id = message.photo[-1].file_id
 
-    # አጭር Callback Data በመጠቀም የተፈጠረውን ስህተት መፍታት
     admin_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -142,29 +141,38 @@ async def approve_payment(callback: CallbackQuery):
         caption=callback.message.caption + "\n\n✅ **ሁኔታ፦ ጸድቋል (Approved)**"
     )
 
-    await bot.send_message(
-        chat_id=target_user_id,
-        text=f"🎉 **ክፍያዎ ተረጋግጧል!**\n\nየመረጡት፦ *{product['name']}* ከታች ይላክሎታል።\n\nሌላ ተጨማሪ ትምህርት ወይም XML መግዛት ከፈለጉ ድጋሚ /start በማለት መግዛት ይችላሉ!",
-        parse_mode="Markdown"
-    )
+    try:
+        if product["delivery_type"] == "video":
+            await bot.send_video(
+                chat_id=target_user_id,
+                video=product["content"],
+                caption=f"🎬 {product['name']}\n\nስለገዙ እናመሰግናለን!"
+            )
+        elif product["delivery_type"] == "document":
+            await bot.send_document(
+                chat_id=target_user_id,
+                document=product["content"],
+                caption=f"📄 {product['name']}\n\nስለገዙ እናመሰግናለን!"
+            )
 
-    if product["delivery_type"] == "video":
-        await bot.send_video(
+        await bot.send_message(
             chat_id=target_user_id,
-            video=product["content"],
-            caption=f"🎬 {product['name']}\n\nስለገዙ እናመሰግናለን!"
+            text=f"🎉 **ክፍያዎ ተረጋግጧል!**\n\nየመረጡት፦ *{product['name']}* በላይ ተልኮልዎታል።\n\nሌላ ተጨማሪ ትምህርት ወይም XML መግዛት ከፈለጉ ድጋሚ /start በማለት መግዛት ይችላሉ!",
+            parse_mode="Markdown"
         )
-    elif product["delivery_type"] == "document":
-        await bot.send_document(
-            chat_id=target_user_id,
-            document=product["content"],
-            caption=f"📄 {product['name']}\n\nስለገዙ እናመሰግናለን!"
+        await callback.answer("ክፍያው ጸድቋል፤ ቪዲዮው/ፋይሉ ለተጠቃሚው ተልኳል!")
+
+    except Exception as e:
+        logging.error(f"Failed to send file: {e}")
+        await bot.send_message(
+            chat_id=ADMIN_ID,
+            text=f"⚠️ **ፋይል መላክ አልተቻለም!**\n\n**Error:** `{e}`\n\nእባክዎን የ `file_id` ትክክለኛነት ያረጋግጡ።",
+            parse_mode="Markdown"
         )
+        await callback.answer("ስህተት ተፈጥሯል፤ ፋይሉ አልተላከም!", show_alert=True)
 
     if target_user_id in user_orders:
         del user_orders[target_user_id]
-
-    await callback.answer("ክፍያው ጸድቋል፤ ቪዲዮው/ፋይሉ ለተጠቃሚው ተልኳል!")
 
 @dp.callback_query(F.data.startswith("r|"))
 async def reject_payment(callback: CallbackQuery):
