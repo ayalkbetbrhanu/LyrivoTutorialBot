@@ -5,7 +5,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
 
 # Configuration
-BOT_TOKEN = "8629276780:AAHnC7kEHGraMI27-uxuB_Sha39LsdMtgbU"
+BOT_TOKEN = "8629276780:AAE_XJSmZ_1Y_egfGKJAPHreZKeNg2eyGzw"
 ADMIN_ID = 8616559205  # ያንተ Telegram ID
 TELEBIRR_NUMBER = "0999942281"
 
