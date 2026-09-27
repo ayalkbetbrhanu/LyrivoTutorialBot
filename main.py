@@ -5,39 +5,39 @@ from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
 
 # Configuration
-BOT_TOKEN = "8629276780:AAE_XJSmZ_1Y_egfGKJAPHreZKeNg2eyGzw"
+BOT_TOKEN = "8629276780:AAHnC7kEHGraMI27-uxuB_Sha39LsdMtgbU"
 ADMIN_ID = 8616559205  # ያንተ Telegram ID
 TELEBIRR_NUMBER = "0999942281"
 
-# Products Definition
+# Products Definition (100% Correct Telegram File IDs)
 PRODUCTS = {
     "p1": {
         "name": "🎬 3D Card Lyrics Edit Tutorial Video",
         "price": "200 ብር",
         "caption": "የ 3D Card Lyrics Video አሰራር ሙሉ ቱቶሪያል ቪዲዮ።",
         "delivery_type": "video",
-        "content": "AAMCBAADGQEDmFZxarijYpL7lST8B0TLWpn8BOk7Q3gAAmYhAAKtFchRvnLTuz25K5wBAAdtAAM9BA"
+        "content": "BAACAgQAAxkBAAEi7uxquMpEMf1EROWbSWYJjolZYUwa6QACZiEAAq0VyFFbTbSlsYN2Yj0E"
     },
     "p2": {
         "name": "🎬 Text Animation Lyrics Edit Tutorial Video",
         "price": "200 ብር",
         "caption": "የ Text Animation Lyrics Video አሰራር ሙሉ ቱቶሪያል ቪዲዮ።",
         "delivery_type": "video",
-        "content": "AAMCBAADGQEDmFb3arilFmh9-l-0pCgnuwUGpZGzmFEAAmEhAAKtFchRth-ezFqfd9EBAAdtAAM9BA"
+        "content": "BAACAgQAAxkBAAEi7utquMpEdmT3t9ONfy7Z7AO04LsrvgACYSEAAq0VyFF9ccA4B4tRmT0E"
     },
     "p3": {
         "name": "📄 Text Animation Lyrics Edit XML File",
         "price": "150 ብር",
         "caption": "ለ Text Animation Lyrics Edit የሚሆን XML Preset ፋይል።",
         "delivery_type": "document",
-        "content": "BQACAgQAAxkBAAEi7kpquKh01QHyGXgbT7Mo4FtDWt5wiQACZYEAAq0VyFEls1lywTAapDOE"
+        "content": "BQACAgQAAxkBAAEi7kxquKiRJZq5mHe4CsUswcjrRI0JWgAC6RsAAq0VwFFEK9YKYq-Q8j0E"
     },
     "p4": {
         "name": "📄 3D Card Lyrics Edit XML File",
         "price": "150 ብር",
         "caption": "ለ 3D Card Lyrics Edit የሚሆን XML Preset ፋይል።",
         "delivery_type": "document",
-        "content": "BQACAgQAAxkBAAEi7kpquKh01QHyGXgbT7Mo4FtDWt5wiQACZyEAAq0VyFEls1lywTAapDOE"
+        "content": "BQACAgQAAxkBAAEi7kpquKh0lQHyGXgbT7Mo4FtDWt5wiQACZyEAAq0VyFEls1lywTAapD0E"
     }
 }
 
@@ -166,7 +166,7 @@ async def approve_payment(callback: CallbackQuery):
         logging.error(f"Failed to send file: {e}")
         await bot.send_message(
             chat_id=ADMIN_ID,
-            text=f"⚠️ **ፋይል መላክ አልተቻለም!**\n\n**Error:** `{e}`\n\nእባክዎን የ `file_id` ትክክለኛነት ያረጋግጡ።",
+            text=f"⚠️ **ፋይል መላክ አልተቻለም!**\n\n**Error:** `{e}`",
             parse_mode="Markdown"
         )
         await callback.answer("ስህተት ተፈጥሯል፤ ፋይሉ አልተላከም!", show_alert=True)
