@@ -1,0 +1,420 @@
+import os
+import logging
+
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters,
+    ContextTypes,
+)
+
+
+# =========================================================
+# CONFIGURATION
+# =========================================================
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+ADMIN_CHAT_ID = 8616559205
+
+
+# =========================================================
+# LOGGING
+# =========================================================
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
+
+logger = logging.getLogger(__name__)
+
+
+# =========================================================
+# CHECK BOT TOKEN
+# =========================================================
+
+if not BOT_TOKEN:
+    raise RuntimeError(
+        "BOT_TOKEN environment variable is not set. "
+        "Please add BOT_TOKEN in Wispbyte Environment Variables."
+    )
+
+
+# =========================================================
+# PRODUCTS
+# =========================================================
+
+PRODUCTS = {
+    "p1": {
+        "name": "3D Card Lyrics Edit Tutorial",
+        "type": "video",
+        "file_id": "BAACAgQAAxkBAAEi7utquMpEdmT3t9ONfy7Z7AO04LsrvgACYSEAAq0VyFF9ccA4B4tRmT0E",
+    },
+
+    "p2": {
+        "name": "Text Animation Lyrics Edit Tutorial",
+        "type": "video",
+        "file_id": "BAACAgQAAxkBAAEi7uxquMpEMf1EROWbSWYJjolZYUwa6QACZiEAAq0VyFFbTbSlsYN2Yj0E",
+    },
+
+    "p3": {
+        "name": "Text Animation Lyrics Edit XML",
+        "type": "document",
+        "file_id": "BQACAgQAAxkBAAEi7kxquKiRJZq5mHe4CsUswcjrRI0JWgAC6RsAAq0VwFFEK9YKYq-Q8j0E",
+    },
+
+    "p4": {
+        "name": "3D Card Lyrics Edit XML",
+        "type": "document",
+        "file_id": "BQACAgQAAxkBAAEi7kpquKh0lQHyGXgbT7Mo4FtDWt5wiQACZyEAAq0VyFEls1lywTAapD0E",
+    },
+}
+
+
+# =========================================================
+# /START
+# =========================================================
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    try:
+        args = context.args
+
+        if args:
+            prod_id = args[0]
+
+            if prod_id in PRODUCTS:
+
+                context.user_data["pending_product"] = prod_id
+
+                product_name = PRODUCTS[prod_id]["name"]
+
+                await update.message.reply_text(
+                    f"🎯 የመረጡት ምርት፦ {product_name}\n\n"
+                    "እባክዎን የ Telebirr ክፍያ ደረሰኝ "
+                    "(Screenshot) እዚህ ይላኩ።"
+                )
+
+                return
+
+        await update.message.reply_text(
+            "ሰላም! 👋\n\n"
+            "እባክዎን ምርት ለመግዛት "
+            "ድህረ ገጻችንን ይጠቀሙ።"
+        )
+
+    except Exception:
+        logger.exception("Error in /start")
+
+
+# =========================================================
+# PAYMENT SCREENSHOT
+# =========================================================
+
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    try:
+
+        prod_id = context.user_data.get("pending_product")
+
+        if not prod_id:
+
+            await update.message.reply_text(
+                "⚠️ እባክዎን አስቀድመው "
+                "ከድህረ ገጹ ምርት ይምረጡ።"
+            )
+
+            return
+
+        if prod_id not in PRODUCTS:
+
+            await update.message.reply_text(
+                "❌ የተመረጠው ምርት አልተገኘም።"
+            )
+
+            return
+
+        user = update.effective_user
+
+        photo_id = update.message.photo[-1].file_id
+
+        product_name = PRODUCTS[prod_id]["name"]
+
+        # Tell customer receipt was received
+        await update.message.reply_text(
+            "⏳ የክፍያ ደረሰኝዎ ደርሶናል!\n\n"
+            "ክፍያው ከተረጋገጠ በኋላ "
+            "ፋይሉ ይላክልዎታል።"
+        )
+
+        # Username handling
+        username = (
+            f"@{user.username}"
+            if user.username
+            else "No username"
+        )
+
+        # Admin buttons
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "✅ Confirm & Send",
+                    callback_data=f"approve_{user.id}_{prod_id}",
+                ),
+                InlineKeyboardButton(
+                    "❌ Reject",
+                    callback_data=f"reject_{user.id}",
+                ),
+            ]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Admin caption
+        admin_caption = (
+            "📩 አዲስ ክፍያ ደርሷል!\n\n"
+            f"👤 ደንበኛ፦ {user.full_name}\n"
+            f"📱 Username፦ {username}\n"
+            f"🛒 ምርት፦ {product_name}\n"
+            f"🆔 User ID፦ {user.id}"
+        )
+
+        # Send receipt to admin
+        await context.bot.send_photo(
+            chat_id=ADMIN_CHAT_ID,
+            photo=photo_id,
+            caption=admin_caption,
+            reply_markup=reply_markup,
+        )
+
+        logger.info(
+            "Payment receipt received from user %s for product %s",
+            user.id,
+            prod_id,
+        )
+
+    except Exception:
+        logger.exception("Error while handling payment screenshot")
+
+        await update.message.reply_text(
+            "⚠️ ይቅርታ፣ ችግር ተፈጥሯል። "
+            "እባክዎን እንደገና ይሞክሩ።"
+        )
+
+
+# =========================================================
+# ADMIN APPROVE / REJECT
+# =========================================================
+
+async def handle_approval(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+
+    query = update.callback_query
+
+    try:
+
+        await query.answer()
+
+        data = query.data.split("_")
+
+        action = data[0]
+
+        user_id = int(data[1])
+
+        # =================================================
+        # APPROVE
+        # =================================================
+
+        if action == "approve":
+
+            if len(data) < 3:
+                await query.answer(
+                    "Invalid product.",
+                    show_alert=True,
+                )
+                return
+
+            prod_id = data[2]
+
+            if prod_id not in PRODUCTS:
+
+                await query.answer(
+                    "Product not found.",
+                    show_alert=True,
+                )
+
+                return
+
+            prod_info = PRODUCTS[prod_id]
+
+            try:
+
+                # -----------------------------------------
+                # SEND VIDEO
+                # -----------------------------------------
+
+                if prod_info["type"] == "video":
+
+                    await context.bot.send_video(
+                        chat_id=user_id,
+                        video=prod_info["file_id"],
+                        caption=(
+                            "✅ ክፍያዎ ተረጋግጧል!\n\n"
+                            f"እነሆ የ {prod_info['name']} "
+                            "ቱቶሪያል ቪዲዮ።"
+                        ),
+                    )
+
+                # -----------------------------------------
+                # SEND DOCUMENT
+                # -----------------------------------------
+
+                elif prod_info["type"] == "document":
+
+                    await context.bot.send_document(
+                        chat_id=user_id,
+                        document=prod_info["file_id"],
+                        caption=(
+                            "✅ ክፍያዎ ተረጋግጧል!\n\n"
+                            f"እነሆ የ {prod_info['name']} "
+                            "ፋይል።"
+                        ),
+                    )
+
+                else:
+
+                    await query.answer(
+                        "Unknown product type.",
+                        show_alert=True,
+                    )
+
+                    return
+
+                # -----------------------------------------
+                # UPDATE ADMIN MESSAGE
+                # -----------------------------------------
+
+                old_caption = query.message.caption or ""
+
+                await query.edit_message_caption(
+                    caption=(
+                        f"{old_caption}\n\n"
+                        "✅ ተረጋግጦ ፋይሉ ተልኳል!"
+                    )
+                )
+
+                logger.info(
+                    "Product %s successfully sent to user %s",
+                    prod_id,
+                    user_id,
+                )
+
+            except Exception as e:
+
+                logger.exception(
+                    "Error sending product to user %s",
+                    user_id,
+                )
+
+                old_caption = query.message.caption or ""
+
+                await query.edit_message_caption(
+                    caption=(
+                        f"{old_caption}\n\n"
+                        f"⚠️ ስህተት ተከስቷል፦ {e}"
+                    )
+                )
+
+        # =================================================
+        # REJECT
+        # =================================================
+
+        elif action == "reject":
+
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=(
+                    "❌ ይቅርታ!\n\n"
+                    "የላኩት የክፍያ ደረሰኝ "
+                    "አልተረጋገጠም።\n\n"
+                    "እባክዎን ትክክለኛውን "
+                    "ደረሰኝ እንደገና ይላኩ።"
+                ),
+            )
+
+            old_caption = query.message.caption or ""
+
+            await query.edit_message_caption(
+                caption=(
+                    f"{old_caption}\n\n"
+                    "❌ ውድቅ ተደርጓል!"
+                )
+            )
+
+            logger.info(
+                "Payment rejected for user %s",
+                user_id,
+            )
+
+    except Exception:
+        logger.exception("Error in approval handler")
+
+
+# =========================================================
+# MAIN
+# =========================================================
+
+def main():
+
+    logger.info("Starting Telegram bot...")
+
+    app = (
+        ApplicationBuilder()
+        .token(BOT_TOKEN)
+        .build()
+    )
+
+    # /start
+    app.add_handler(
+        CommandHandler("start", start)
+    )
+
+    # Payment screenshot
+    app.add_handler(
+        MessageHandler(
+            filters.PHOTO,
+            handle_photo,
+        )
+    )
+
+    # Admin buttons
+    app.add_handler(
+        CallbackQueryHandler(
+            handle_approval
+        )
+    )
+
+    logger.info("Bot is running...")
+
+    # Start polling
+    app.run_polling(
+        drop_pending_updates=True
+    )
+
+
+# =========================================================
+# RUN
+# =========================================================
+
+if __name__ == "__main__":
+    main()
