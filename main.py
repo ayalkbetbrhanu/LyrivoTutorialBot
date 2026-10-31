@@ -1,3 +1,4 @@
+import os
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
@@ -6,12 +7,12 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Cal
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 ADMIN_CHAT_ID = 8616559205  # የአንተ Telegram User ID
 
-# ምርቶች እና የየራሳቸው File ID (በ JSON Dump Bot ያገኘኸውን file_id እዚህ ታስገባለህ)
+# ምርቶች እና የየራሳቸው File ID
 PRODUCTS = {
     "p1": {
         "name": "3D Card Lyrics Edit Tutorial", 
-        "type": "video", # ቪዲዮ ከሆነ
-        "file_id": "BAACAgQAAxkBAAEi7utquMpEdmT3t9ONfy7Z7AO04LsrvgACYSEAAq0VyFF9ccA4B4tRmT0E" # የቪዲዮው file_id እዚህ ይገባል
+        "type": "video", 
+        "file_id": "BAACAgQAAxkBAAEi7utquMpEdmT3t9ONfy7Z7AO04LsrvgACYSEAAq0VyFF9ccA4B4tRmT0E" 
     },
     "p2": {
         "name": "Text Animation Lyrics Edit Tutorial", 
@@ -20,8 +21,8 @@ PRODUCTS = {
     },
     "p3": {
         "name": "Text Animation Lyrics Edit XML", 
-        "type": "document", # ዶክመንት/ፋይል ከሆነ
-        "file_id": "BQACAgQAAxkBAAEi7kxquKiRJZq5mHe4CsUswcjrRI0JWgAC6RsAAq0VwFFEK9YKYq-Q8j0E" # የፋይሉ file_id እዚህ ይገባል
+        "type": "document", 
+        "file_id": "BQACAgQAAxkBAAEi7kxquKiRJZq5mHe4CsUswcjrRI0JWgAC6RsAAq0VwFFEK9YKYq-Q8j0E" 
     },
     "p4": {
         "name": "3D Card Lyrics Edit XML", 
@@ -93,7 +94,6 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
         prod_info = PRODUCTS[prod_id]
 
         try:
-            # በ Type በመክፈል ቪዲዮ ወይም ዶክመንት መላክ
             if prod_info["type"] == "video":
                 await context.bot.send_video(
                     chat_id=user_id,
