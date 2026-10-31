@@ -4,14 +4,30 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Cal
 
 # === እዚህ ጋር መረጃዎችህን አስገባ ===
 BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
-ADMIN_CHAT_ID = 123456789  # የአንተ Telegram User ID (በ @userinfobot ማወቅ ትችላለህ)
+ADMIN_CHAT_ID = 8616559205  # የአንተ Telegram User ID
 
-# የምርቶችና የፋይሎች ዝርዝር (File ID ወይም የፋይል Path)
+# ምርቶች እና የየራሳቸው File ID (በ JSON Dump Bot ያገኘኸውን file_id እዚህ ታስገባለህ)
 PRODUCTS = {
-    "p1": {"name": "3D Card Lyrics Edit Tutorial", "file": "YOUR_TUTORIAL_LINK_OR_FILE_ID"},
-    "p2": {"name": "Text Animation Lyrics Edit Tutorial", "file": "YOUR_TUTORIAL_LINK_OR_FILE_ID"},
-    "p3": {"name": "Text Animation Lyrics Edit XML", "file_path": "files/text_anim.xml"},
-    "p4": {"name": "3D Card Lyrics Edit XML", "file_path": "files/3d_card.xml"}
+    "p1": {
+        "name": "3D Card Lyrics Edit Tutorial", 
+        "type": "video", # ቪዲዮ ከሆነ
+        "file_id": "BAACAgQAAxkBAAEi7utquMpEdmT3t9ONfy7Z7AO04LsrvgACYSEAAq0VyFF9ccA4B4tRmT0E" # የቪዲዮው file_id እዚህ ይገባል
+    },
+    "p2": {
+        "name": "Text Animation Lyrics Edit Tutorial", 
+        "type": "video", 
+        "file_id": "BAACAgQAAxkBAAEi7uxquMpEMf1EROWbSWYJjolZYUwa6QACZiEAAq0VyFFbTbSlsYN2Yj0E" 
+    },
+    "p3": {
+        "name": "Text Animation Lyrics Edit XML", 
+        "type": "document", # ዶክመንት/ፋይል ከሆነ
+        "file_id": "BQACAgQAAxkBAAEi7kxquKiRJZq5mHe4CsUswcjrRI0JWgAC6RsAAq0VwFFEK9YKYq-Q8j0E" # የፋይሉ file_id እዚህ ይገባል
+    },
+    "p4": {
+        "name": "3D Card Lyrics Edit XML", 
+        "type": "document", 
+        "file_id": "BQACAgQAAxkBAAEi7kpquKh0lQHyGXgbT7Mo4FtDWt5wiQACZyEAAq0VyFEls1lywTAapD0E" 
+    }
 }
 
 # 1. ድህረ ገጹ ላይ ያለውን Start Link ሲጫኑ
@@ -38,10 +54,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     photo_id = update.message.photo[-1].file_id
 
-    # ለደንበኛው ምላሽ መስጠት
     await update.message.reply_text("⏳ ደረሰኝዎ ደርሶናል! አረጋግጠን ፋይሉን ወዲያውኑ እንልክልዎታለን።")
 
-    # ለአንተ (Admin) ደረሰኙን ከነ ማረጋገጫ ቁልፍ መላክ
     keyboard = [
         [
             InlineKeyboardButton("✅ Confirm & Send", callback_data=f"approve_{user.id}_{prod_id}"),
@@ -65,7 +79,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-# 3. አንተ (Admin) Confirm ወይም Reject ስትጫን የሚሰራ
+# 3. አንተ (Admin) Confirm ስትነካ በ File ID አውቶማቲክ መላክ
 async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -79,18 +93,18 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
         prod_info = PRODUCTS[prod_id]
 
         try:
-            # ፋይል ከሆነ ፋይሉን ይልካል
-            if "file_path" in prod_info:
+            # በ Type በመክፈል ቪዲዮ ወይም ዶክመንት መላክ
+            if prod_info["type"] == "video":
+                await context.bot.send_video(
+                    chat_id=user_id,
+                    video=prod_info["file_id"],
+                    caption=f"✅ ክፍያዎ ተረጋግጧል!\n\nእነሆ የ **{prod_info['name']}** ቱቶሪያል ቪዲዮ።"
+                )
+            elif prod_info["type"] == "document":
                 await context.bot.send_document(
                     chat_id=user_id,
-                    document=open(prod_info["file_path"], 'rb'),
-                    caption=f"✅ ክፍያዎ ተረጋግጧል!\n\nእነሆ የ **{prod_info['name']}** XML ፋይል።"
-                )
-            # ቪዲዮ/ሊንክ ከሆነ ሊንኩን ይልካል
-            else:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=f"✅ ክፍያዎ ተረጋግጧል!\n\nየቱቶሪያል ቪዲዮው ሊንክ፦ {prod_info['file']}"
+                    document=prod_info["file_id"],
+                    caption=f"✅ ክፍያዎ ተረጋግጧል!\n\nእነሆ የ **{prod_info['name']}** ፋይል አባሪ።"
                 )
 
             await query.edit_message_caption(caption=f"{query.message.caption}\n\n✅ **ተረጋግጦ ፋይሉ ተልኳል!**")
@@ -100,7 +114,7 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif action == "reject":
         await context.bot.send_message(
             chat_id=user_id,
-            text="❌ ይቅርታ! የላኩት የክፍያ ደረሰኝ አልተረጋገጠም። እባክዎን ትክክለኛውን ደረሰኝ እንደገና ይላኩ ወይም በ Telegram ያናግሩን።"
+            text="❌ ይቅርታ! የላኩት የክፍያ ደረሰኝ አልተረጋገጠም። እባክዎን ትክክለኛውን ደረሰኝ እንደገና ይላኩ።"
         )
         await query.edit_message_caption(caption=f"{query.message.caption}\n\n❌ **ውድቅ ተደርጓል!**")
 
