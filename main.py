@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
 # === እዚህ ጋር መረጃዎችህን አስገባ ===
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 ADMIN_CHAT_ID = 8616559205  # የአንተ Telegram User ID
 
 # ምርቶች እና የየራሳቸው File ID (በ JSON Dump Bot ያገኘኸውን file_id እዚህ ታስገባለህ)
